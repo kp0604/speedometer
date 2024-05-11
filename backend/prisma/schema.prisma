@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // Include the database name directly in the URL
+}
+
+
+model connections {
+  id        Int       @id @default(autoincrement())
+  clientId  String    @unique
+  sensorName  String?  @unique
+  createdAt DateTime  @default(now())
+}
+
+
+model sensorData {
+  id         Int       @id @default(autoincrement())
+  sensorName   String
+  speed      Int
+  timestamp  DateTime
+}
