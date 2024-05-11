@@ -41,7 +41,8 @@ wss.on("connection", (ws: WebSocket, req: any) => {
 	});
 
 	// messages over connection are handled here
-	ws.on("message", (message: WebSocket.Data) => {
+	ws.on("message", (data: WebSocket.Data, isBinary) => {
+		const message = isBinary ? data : data.toString();
 		handleMessage(ws, message, clientId, sensorName);
 	});
 
@@ -91,36 +92,35 @@ function handleMessage(
 
 // sensor data is processed and saved to db via this function
 async function processSensorData(data: sensorData) {
-    try {
-        // checking here if messages overflowed and can be stored in db
-        let dataArray = sensorsData.get(data.sensorName)?.length;
-        let ifQuery = dataArray && dataArray >= 10 ? true : false;
+	try {
+		// checking here if messages overflowed and can be stored in db
+		let dataArray = sensorsData.get(data.sensorName)?.length;
+		let ifQuery = dataArray && dataArray >= 10 ? true : false;
 
-        if (ifQuery) {
-            // Collect all the data that needs to be stored in a batch
-            const dataToStore = sensorsData.get(data.sensorName)?.map(item => ({
-                sensorName: data.sensorName,
-                speed: item.speed,
-                timestamp: item.timestamp,
-            })) || [];
+		if (ifQuery) {
+			// Collect all the data that needs to be stored in a batch
+			const dataToStore = sensorsData.get(data.sensorName)?.map(item => ({
+				sensorName: data.sensorName,
+				speed: item.speed,
+				timestamp: item.timestamp,
+			})) || [];
 
-            // batch insert the collected data into the database
-            await prisma.sensorData.createMany({
-                data: dataToStore,
-            });
-        } 
+			// batch insert the collected data into the database
+			await prisma.sensorData.createMany({
+				data: dataToStore,
+			});
+		}
 
 		// set latest sensorsData in collection
 		sensorsData.set(data.sensorName, [{ speed: data.speed, timestamp: data.timestamp }]);
 
-        // after that sensor data is broadcasted to subscribers
-        broadcastSensorData(data);
-    } catch (error) {
-        console.error("Error processing sensor data:", error);
-        throw new Error("Error processing sensor data");
-    }
+		// after that sensor data is broadcasted to subscribers
+		broadcastSensorData(data);
+	} catch (error) {
+		console.error("Error processing sensor data:", error);
+		throw new Error("Error processing sensor data");
+	}
 }
-
 
 // sensor data is broadcasted to subscribers via this function
 function broadcastSensorData(data: sensorData) {
@@ -150,12 +150,29 @@ function subscribeClient(ws: WebSocket, sensorName: string | null) {
 // web socket connection is saved to db via this function
 async function saveConnection(clientId: string, sensorName: string | null) {
 	try {
-		await prisma.connections.create({
-			data: {
-				clientId,
-				sensorName: sensorName || null,
-			},
-		});
+		if (sensorName === null) {
+			// create new connection entry, if sensorName null than its not sensor
+			await prisma.connections.create({
+				data: {
+					clientId,
+					sensorName: null,
+				},
+			});
+		} else {
+			// upsert operation to update or create connection here if sensorName not null means its sensor
+			await prisma.connections.upsert({
+				where: {
+					sensorName,
+				},
+				update: {
+					clientId,
+				},
+				create: {
+					clientId,
+					sensorName,
+				},
+			});
+		}
 	} catch (error) {
 		console.error("Error saving WebSocket connection:", error);
 		throw new Error("Error saving WebSocket connection");
