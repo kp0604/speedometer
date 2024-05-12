@@ -23,11 +23,11 @@
   - The data that was published to Kafka is listened to via consumer, it is received in batch and that batch is sent to the database via batch query to the database.
   - This eliminates multiple queries to the database, one producer and one consumer is used to fulfill this.
 
-## Architecture Block Diagram : [LINK](link_to_diagram)
+## Architecture Block Diagram : [LINK](https://app.eraser.io/workspace/43uLCMvsKzh5yAdc3CnS)
 
 ## Commands To Run Project And App In Local:
 - **Docker Compose Up**: to start the app
-- **Link to view frontend**: [Speedometer App](frontend_link)
+- **Link to view frontend**: [Speedometer App](http://localhost:3000/)
 - **Connect sensor to backend**: `ws://localhost:8080?sensorName=sensor_a` , give sensor name accordingly to any string.
 - **Sent payload time series data to sensor websocket connection** : 
   - **FORMAT**: `{"speed":50,"timestamp":"2024-05-12T17:12:46Z"}`
