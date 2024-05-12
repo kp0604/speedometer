@@ -15,7 +15,6 @@ model connections {
   createdAt DateTime  @default(now())
 }
 
-
 model sensorData {
   id         Int       @id @default(autoincrement())
   sensorName   String
